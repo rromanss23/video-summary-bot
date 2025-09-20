@@ -1,0 +1,230 @@
+"""
+YouTube API handler for getting latest videos and transcripts
+"""
+
+import logging
+from typing import Optional, Dict
+from youtube_transcript_api import YouTubeTranscriptApi
+from googleapiclient.discovery import build
+
+
+class YouTubeHandler:
+    """Handles YouTube API operations"""
+    
+    def __init__(self, api_key: str):
+        """Initialize YouTube handler with API key"""
+        self.api_key = api_key
+        self.youtube = build('youtube', 'v3', developerKey=api_key)
+        self.logger = logging.getLogger(__name__)
+    
+    def get_latest_video(self, channel_id: str) -> Optional[Dict]:
+        """
+        Get the latest video from a specific channel
+        
+        Args:
+            channel_id: YouTube channel ID (e.g., 'UCxxxxxx') or handle (e.g., '@channelname')
+        
+        Returns:
+            Dict with video info or None if not found
+        """
+        try:
+            self.logger.info(f"Getting latest video from channel: {channel_id}")
+            
+            # If channel_id starts with @, we need to get the actual channel ID first
+            if channel_id.startswith('@'):
+                actual_channel_id = self._get_channel_id_from_handle(channel_id)
+                if not actual_channel_id:
+                    self.logger.error(f"Could not find channel ID for handle: {channel_id}")
+                    return None
+                channel_id = actual_channel_id
+            
+            # Search for latest video from the channel
+            request = self.youtube.search().list(
+                part='snippet',
+                channelId=channel_id,
+                maxResults=1,
+                order='date',
+                type='video'
+            )
+            
+            response = request.execute()
+            
+            if not response.get('items'):
+                self.logger.warning(f"No videos found for channel: {channel_id}")
+                return None
+            
+            video = response['items'][0]
+            video_info = {
+                'id': video['id']['videoId'],
+                'title': video['snippet']['title'],
+                'description': video['snippet']['description'],
+                'published_at': video['snippet']['publishedAt'],
+                'channel_title': video['snippet']['channelTitle'],
+                'thumbnail_url': video['snippet']['thumbnails']['medium']['url']
+            }
+            
+            self.logger.info(f"Found video: {video_info['title']}")
+            return video_info
+            
+        except Exception as e:
+            self.logger.error(f"Error getting latest video: {e}")
+            return None
+    
+    def _get_channel_id_from_handle(self, handle: str) -> Optional[str]:
+        """
+        Convert @handle to channel ID
+        
+        Args:
+            handle: Channel handle like '@channelname'
+        
+        Returns:
+            Channel ID or None if not found
+        """
+        try:
+            # Remove @ symbol
+            username = handle.replace('@', '')
+            
+            # Try to get channel by username
+            request = self.youtube.channels().list(
+                part='id',
+                forUsername=username
+            )
+            response = request.execute()
+            
+            if response.get('items'):
+                return response['items'][0]['id']
+            
+            # If not found by username, try searching
+            search_request = self.youtube.search().list(
+                part='snippet',
+                q=handle,
+                type='channel',
+                maxResults=1
+            )
+            search_response = search_request.execute()
+            
+            if search_response.get('items'):
+                return search_response['items'][0]['snippet']['channelId']
+            
+            return None
+            
+        except Exception as e:
+            self.logger.error(f"Error converting handle to channel ID: {e}")
+            return None
+    
+    def get_transcript(self, video_id: str) -> Optional[str]:
+            """
+            Get transcript for a specific video in Spanish
+            
+            Args:
+                video_id: YouTube video ID
+            
+            Returns:
+                Full transcript text in Spanish or None if not available
+            """
+            try:
+                self.logger.info(f"Getting Spanish transcript for video: {video_id}")
+                
+                # Initialize transcript API
+                transcript_api = YouTubeTranscriptApi()
+                
+                # Get transcript list for the video
+                transcript_list = transcript_api.list(video_id)
+                
+                # Try to find Spanish transcript
+                try:
+                    transcript = transcript_list.find_transcript(['es'])
+                    self.logger.info("Found Spanish transcript")
+                except:
+                    self.logger.error("No Spanish transcript available")
+                    return None
+                
+                # Fetch transcript data
+                transcript_data = transcript.fetch()
+                # self.logger.info(f"Fetched {transcript_data} transcript entries")
+                
+                # Combine all text
+                full_text = ' '.join([snippet.text for snippet in transcript_data])
+                
+                self.logger.info(f"Spanish transcript retrieved, length: {len(full_text)} characters")
+                return full_text
+            
+            except Exception as e:
+                self.logger.error(f"Error getting transcript: {e}")
+                return None
+    
+    def get_video_info_with_transcript(self, channel_id: str) -> Optional[Dict]:
+        """
+        Get latest video from channel with its transcript
+        
+        Args:
+            channel_id: YouTube channel ID or handle
+        
+        Returns:
+            Dict with video info and transcript or None if failed
+        """
+        try:
+            # Get latest video
+            video_info = self.get_latest_video(channel_id)
+            if not video_info:
+                return None
+            
+            # Get transcript
+            transcript = self.get_transcript(video_info['id'])
+            if not transcript:
+                self.logger.warning(f"No transcript available for video: {video_info['title']}")
+                return video_info  # Return video info even without transcript
+            
+            # Add transcript to video info
+            video_info['transcript'] = transcript
+            return video_info
+            
+        except Exception as e:
+            self.logger.error(f"Error getting video with transcript: {e}")
+            return None
+
+
+if __name__ == "__main__":
+    # Test the YouTube handler
+    import os
+    from dotenv import load_dotenv
+    
+    load_dotenv()
+    
+    # Setup logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger(__name__)
+    
+    # Test with your API key
+    api_key = os.getenv('YOUTUBE_API_KEY')
+    if not api_key:
+        logger.error("❌ Please set YOUTUBE_API_KEY in .env file")
+        exit(1)
+    
+    # Initialize handler
+    yt = YouTubeHandler(api_key)
+    
+    # Test with a channel (replace with actual channel ID)
+    # Supports both channel ID and @handle
+    test_channel = "@JoseLuisCavatv"  # Cava
+    
+    logger.info(f"Testing with channel: {test_channel}")
+    
+    # Test getting latest video
+    video = yt.get_latest_video(test_channel)
+    if video:
+        logger.info(f"✅ Latest video: {video['title']}")
+        logger.info(f"📅 Published: {video['published_at']}")
+        
+        # Test getting transcript
+        transcript = yt.get_transcript(video['id'])
+        if transcript:
+            logger.info(f"✅ Transcript length: {len(transcript)} characters")
+            logger.info(f"📝 First 200 chars: {transcript[:200]}...")
+        else:
+            logger.warning("❌ No transcript available")
+    else:
+        logger.error("❌ Could not get latest video")
