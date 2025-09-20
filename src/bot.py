@@ -1,4 +1,3 @@
-# Test both handlers together
 from youtube_handler import YouTubeHandler
 from gemini_handler import GeminiHandler
 from telegram_handler import TelegramHandler
