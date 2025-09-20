@@ -33,34 +33,8 @@ class GeminiHandler:
             
             prompt = f"""
             Eres un especialista en crear resúmenes concisos de videos financieros y económicos.
-            
-            CANAL: {channel_name}
-            TÍTULO: {video_title}
-            
-            Crea un resumen estructurado del siguiente video:
-            
-            TRANSCRIPCIÓN:
+            Resume esta transcripcion de video:
             {transcript}
-            
-            FORMATO REQUERIDO:
-            
-            🎯 **TEMA PRINCIPAL**
-            [Describe en 1-2 líneas el tema central]
-            
-            📋 **PUNTOS CLAVE**
-            • [Punto importante 1]
-            • [Punto importante 2]
-            • [Punto importante 3]
-            • [Máximo 5 puntos]
-            
-            💡 **CONCLUSIÓN**
-            [Takeaway principal en 1-2 líneas]
-            
-            INSTRUCCIONES:
-            - Sé conciso pero informativo
-            - Lenguaje profesional pero accesible
-            - Máximo 2000 caracteres
-            - Enfócate en información financiera/económica
             """
             
             response = self.model.generate_content(prompt)
