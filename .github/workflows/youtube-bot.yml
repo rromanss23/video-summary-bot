@@ -2,8 +2,8 @@ name: YouTube Summary Bot
 
 on:
   schedule:
-    # Runs daily at 11:30 UTC (adjust timezone as needed)
-    - cron: '30 11 * * *'
+    # Runs daily at 12.00 CET
+    - cron: '00 10 * * *'
   workflow_dispatch: # Allows manual trigger
 
 jobs:
