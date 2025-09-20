@@ -32,8 +32,8 @@ class GeminiHandler:
             self.logger.info(f"Generating summary for: {video_title}")
             
             prompt = f"""
-            Eres un especialista en crear resúmenes concisos de videos financieros y económicos.
-            Resume esta transcripcion de video:
+            Eres un especialista en crear resúmenes de videos financieros y económicos.
+            Resume esta transcripcion de video, destaca los puntos clave y no te dejes nada de información importante.
             {transcript}
             """
             
