@@ -127,24 +127,19 @@ class YouTubeHandler:
                 
                 # Initialize transcript API
                 transcript_api = YouTubeTranscriptApi()
-                
-                # Get transcript list for the video
-                transcript_list = transcript_api.list(video_id)
-                
+                                
                 # Try to find Spanish transcript
                 try:
-                    transcript = transcript_list.find_transcript(['es'])
+                    transcript = transcript_api.fetch(video_id, languages=['es'])
                     self.logger.info("Found Spanish transcript")
                 except:
                     self.logger.error("No Spanish transcript available")
                     return None
                 
-                # Fetch transcript data
-                transcript_data = transcript.fetch()
                 # self.logger.info(f"Fetched {transcript_data} transcript entries")
                 
                 # Combine all text
-                full_text = ' '.join([snippet.text for snippet in transcript_data])
+                full_text = ' '.join([snippet.text for snippet in transcript])
                 
                 self.logger.info(f"Spanish transcript retrieved, length: {len(full_text)} characters")
                 return full_text

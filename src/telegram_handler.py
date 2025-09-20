@@ -17,7 +17,7 @@ class TelegramHandler:
         self.base_url = f"https://api.telegram.org/bot{bot_token}"
         self.logger = logging.getLogger(__name__)
     
-    def send_message(self, text: str, parse_mode: str = 'Markdown') -> bool:
+    def send_message(self, text: str, parse_mode: str) -> bool:
         """
         Send a text message to Telegram
         
@@ -48,9 +48,11 @@ class TelegramHandler:
             payload = {
                 'chat_id': self.chat_id,
                 'text': text,
-                'parse_mode': parse_mode,
                 'disable_web_page_preview': True
             }
+                    # Only add parse_mode if it's not None or empty
+            if parse_mode:
+                payload['parse_mode'] = parse_mode
             
             response = requests.post(url, json=payload, timeout=30)
             
