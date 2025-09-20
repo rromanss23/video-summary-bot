@@ -128,21 +128,30 @@ class YouTubeHandler:
                 # Initialize transcript API
                 transcript_api = YouTubeTranscriptApi()
                                 
-                # Try to find Spanish transcript
+            # Try to find Spanish transcript
+            # Try direct fetch first (your working method)
                 try:
                     transcript = transcript_api.fetch(video_id, languages=['es'])
-                    self.logger.info("Found Spanish transcript")
-                except:
-                    self.logger.error("No Spanish transcript available")
-                    return None
-                
-                # self.logger.info(f"Fetched {transcript_data} transcript entries")
-                
-                # Combine all text
-                full_text = ' '.join([snippet.text for snippet in transcript])
-                
-                self.logger.info(f"Spanish transcript retrieved, length: {len(full_text)} characters")
-                return full_text
+                    full_text = ' '.join([snippet.text for snippet in transcript])
+                    self.logger.info(f"Spanish transcript retrieved: {len(full_text)} characters")
+                    return full_text
+                except Exception as e:
+                    self.logger.warning(f"Direct fetch failed: {e}")
+                    
+                    # Fallback: try list/find method
+                    try:
+                        transcript_list = transcript_api.list(video_id)
+                        transcript = transcript_list.find_transcript(['es'])
+                        transcript_data = transcript.fetch()
+                        full_text = ' '.join([snippet.text for snippet in transcript_data])
+                        self.logger.info(f"Fallback method worked: {len(full_text)} characters")
+                        return full_text
+                    except Exception as e:
+                        self.logger.warning(f"Fallback also failed: {e}")
+                    
+                    
+                    self.logger.info(f"Spanish transcript retrieved, length: {len(full_text)} characters")
+                    return full_text
             
             except Exception as e:
                 self.logger.error(f"Error getting transcript: {e}")
