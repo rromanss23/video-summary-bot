@@ -13,7 +13,7 @@ class GeminiHandler:
     def __init__(self, api_key: str):
         """Initialize Gemini handler with API key"""
         genai.configure(api_key=api_key)
-        self.model = genai.GenerativeModel('gemini-2.0-flash')
+        self.model = genai.GenerativeModel('gemini-2.5-flash')
         self.logger = logging.getLogger(__name__)
     
     def summarize_video(self, transcript: str, video_title: str, channel_name: str) -> Optional[str]:
@@ -50,6 +50,41 @@ class GeminiHandler:
             self.logger.error(f"Error generating summary: {e}")
             return None
 
+    def get_todays_news(self) -> Optional[str]:
+        """
+        Generate a summary of a video transcript
+        
+        Args:
+            transcript: Full video transcript text
+            video_title: Title of the video
+            channel_name: Name of the YouTube channel
+        
+        Returns:
+            Summary text or None if failed
+        """
+        try:
+            self.logger.info(f"Generating news summary")
+            
+            prompt = f"""
+            Hazme un resumen de las noticias económicas y financieras más importantes de hoy a nivel españa e internacional.
+            Especificamente de los mercados financieros, bolsa, criptomonedas, tipos de interés, inflación y economía en general.
+            Ponme los enlaces de las fuentes de información que utilices para hacer el resumen.
+            No te inventes nada, solo utiliza información verificada y de fuentes fiables.
+            """
+            
+            response = self.model.generate_content(prompt)
+            
+            if response.text:
+                self.logger.info(f"Summary generated: {len(response.text)} characters")
+                return response.text
+            else:
+                self.logger.error("Empty response from Gemini")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"Error generating summary: {e}")
+            return None
+
 
 if __name__ == "__main__":
     import os
@@ -68,10 +103,11 @@ if __name__ == "__main__":
     
     # Test with sample text
     test_transcript = "Hoy hablamos sobre el mercado de valores y las predicciones económicas para 2025..."
-    summary = gemini.summarize_video(test_transcript, "Test Video", "Test Channel")
-    
-    if summary:
-        print("Summary generated:")
-        print(summary)
+    # summary = gemini.summarize_video(test_transcript, "Test Video", "Test Channel")
+    news_summary = gemini.get_todays_news()
+
+    if news_summary:
+        print("News summary generated:")
+        print(news_summary)
     else:
         print("Failed to generate summary")
