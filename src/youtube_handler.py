@@ -6,6 +6,7 @@ import logging
 from typing import Optional, Dict
 from youtube_transcript_api import YouTubeTranscriptApi
 from googleapiclient.discovery import build
+from datetime import datetime
 
 
 class YouTubeHandler:
@@ -17,9 +18,9 @@ class YouTubeHandler:
         self.youtube = build('youtube', 'v3', developerKey=api_key)
         self.logger = logging.getLogger(__name__)
     
-    def get_latest_video(self, channel_id: str) -> Optional[Dict]:
+    def get_todays_video(self, channel_id: str) -> Optional[Dict]:
         """
-        Get the latest video from a specific channel
+        Get the today's video from a specific channel
         
         Args:
             channel_id: YouTube channel ID (e.g., 'UCxxxxxx') or handle (e.g., '@channelname')
@@ -54,17 +55,23 @@ class YouTubeHandler:
                 return None
             
             video = response['items'][0]
-            video_info = {
-                'id': video['id']['videoId'],
-                'title': video['snippet']['title'],
-                'description': video['snippet']['description'],
-                'published_at': video['snippet']['publishedAt'],
-                'channel_title': video['snippet']['channelTitle'],
-                'thumbnail_url': video['snippet']['thumbnails']['medium']['url']
-            }
+            today = datetime.now().strftime('%Y-%m-%d')
+
+            if video['snippet']['publishedAt'][:10] == today:  # Replace with today's date in 'YYYY-MM-DD' format
+                video_info = {
+                    'id': video['id']['videoId'],
+                    'title': video['snippet']['title'],
+                    'description': video['snippet']['description'],
+                    'published_at': video['snippet']['publishedAt'],
+                    'channel_title': video['snippet']['channelTitle'],
+                    'thumbnail_url': video['snippet']['thumbnails']['medium']['url']
+                }
             
-            self.logger.info(f"Found video: {video_info['title']}")
-            return video_info
+                self.logger.info(f"Found video: {video_info['title']}")
+                return video_info
+            else:
+                self.logger.info(f"No video published today for channel: {channel_id}")
+                return None
             
         except Exception as e:
             self.logger.error(f"Error getting latest video: {e}")
@@ -169,7 +176,7 @@ class YouTubeHandler:
         """
         try:
             # Get latest video
-            video_info = self.get_latest_video(channel_id)
+            video_info = self.get_todays_video(channel_id)
             if not video_info:
                 return None
             
@@ -213,14 +220,14 @@ if __name__ == "__main__":
     
     # Test with a channel (replace with actual channel ID)
     # Supports both channel ID and @handle
-    test_channel = "@JoseLuisCavatv"  # Cava
+    test_channel = "@nacho_ic" 
     
     logger.info(f"Testing with channel: {test_channel}")
-    
-    # Test getting latest video
-    video = yt.get_latest_video(test_channel)
+
+    # Test getting today's video
+    video = yt.get_todays_video(test_channel)
     if video:
-        logger.info(f"✅ Latest video: {video['title']}")
+        logger.info(f"✅ Today's video: {video['title']}")
         logger.info(f"📅 Published: {video['published_at']}")
         
         # Test getting transcript
