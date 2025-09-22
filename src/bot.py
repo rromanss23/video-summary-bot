@@ -28,7 +28,7 @@ for channel in youtube_channels:
         if summary:
             message = f"📺 *{video_data['title']}*\n\n{summary}\n\n🔗 https://www.youtube.com/watch?v={video_data['id']}"
             logger.info("Sending summary to Telegram...: ", message)
-            if telegram.send_message(message, 'Markdown'):
+            if telegram.send_message(message, None):
                 print("✅ Summary sent to Telegram!")
             else:
                 print("❌ Failed to send summary to Telegram")
