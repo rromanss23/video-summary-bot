@@ -13,4 +13,9 @@ bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
 chat_id = os.getenv('TELEGRAM_CHAT_ID')
 
 # Channels to monitor
-youtube_channels = ["@JoseLuisCavatv", "@nacho_ic"]
+youtube_channels = [
+    "@JoseLuisCavatv", 
+    "@nacho_ic", 
+    "@juanrallo", 
+    "@NegociosTV"
+    ]

@@ -2,8 +2,6 @@ from youtube_handler import YouTubeHandler
 from gemini_handler import GeminiHandler
 from telegram_handler import TelegramHandler
 from config import youtube_api_key, gemini_api_key, bot_token, chat_id, youtube_channels
-import os
-from dotenv import load_dotenv
 import logging
 
 logger = logging.getLogger(__name__)
