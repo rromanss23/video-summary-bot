@@ -34,6 +34,7 @@ class GeminiHandler:
             prompt = f"""
             Eres un especialista en crear resúmenes de videos financieros y económicos.
             Resume esta transcripcion de video, destaca los puntos clave y no te dejes nada de información importante.
+            El objetivo es mandar la trasncripción a un canal de Telegram, produce el texto de manera que sea parseable en Markdown.
             {transcript}
             """
             
