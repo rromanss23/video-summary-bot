@@ -34,7 +34,7 @@ class GeminiHandler:
             prompt = f"""
             Eres un especialista en crear resúmenes de videos financieros y económicos.
             Resume esta transcripcion de video, destaca los puntos clave y no te dejes nada de información importante.
-            Evita introducciones a lo que vas a hacer ni cierres innecesarios.
+            Evita introducciones a lo que vas a hacer ni cierres innecesarios. No uses asteriscos.
             {transcript}
             """
             
