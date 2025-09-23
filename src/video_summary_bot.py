@@ -11,10 +11,6 @@ yt = YouTubeHandler(youtube_api_key)
 gemini = GeminiHandler(gemini_api_key)
 telegram = TelegramHandler(bot_token, chat_id)
 
-# For YouTube summaries - send to users who want that channel
-# TODO: schedule the script to run daily on weekdays
-# If time is 10.30AM on a weekday, Madrid time, run for channel @JoseLuisCavatv
-# if time is 12.30PM on a weekday, Madrid time, run for channel @nacho_ic
 for channel in youtube_channels:
     # Get users who want this channel
     target_users = [chat_id for chat_id, prefs in user_preferences.items() 
