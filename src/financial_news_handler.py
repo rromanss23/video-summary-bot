@@ -114,8 +114,8 @@ class FinancialNewsHandler:
                 '^DJI': 'Dow Jones',
                 '^IXIC': 'NASDAQ',
                 '^RUT': 'Russell 2000',
-                'GOLD': 'Gold',
-                'SILVER': 'Silver'
+                'GLD': 'Gold',
+                'SLV': 'Silver'
             }
             
             for symbol, name in symbols.items():

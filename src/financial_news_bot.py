@@ -1,5 +1,5 @@
 from gemini_handler import GeminiHandler
-from config import gemini_api_key, bot_token, chat_id
+from config import gemini_api_key, bot_token, chat_id, user_preferences
 from src.financial_news_handler import FinancialNewsHandler
 from telegram_handler import TelegramHandler
 import logging
@@ -29,6 +29,14 @@ print("FULL SUMMARY:")
 print("="*50)
 summary = news_handler.create_news_summary()
 print(summary)
+
+
+news_users = [chat_id for chat_id, prefs in user_preferences.items() 
+              if prefs['wants_news']]
+
+if news_users:
+    summary = news_handler.create_news_summary()
+    telegram.send_to_users(summary, None, news_users)
 
 if summary:
     logger.info("Sending news summary to Telegram...")

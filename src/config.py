@@ -19,3 +19,14 @@ youtube_channels = [
     "@juanrallo", 
     "@NegociosTV"
     ]
+
+user_preferences = {
+    '37150610': {  # Victor Roman
+        'channels': ["@JoseLuisCavatv", '@nacho_ic', '@juanrallo'],
+        'wants_news': True
+    },
+    # '1021945174': { # Alberto Salcedo
+    #     'channels': ['@JoseLuisCavatv'],
+    #     'wants_news': False
+    # }
+}

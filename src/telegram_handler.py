@@ -173,6 +173,14 @@ class TelegramHandler:
         except Exception as e:
             self.logger.error(f"Error getting bot info: {e}")
             return None
+        
+    def send_to_users(self, text: str, parse_mode: str, user_list: list) -> dict:
+        """Send message to multiple users"""
+        results = {}
+        for chat_id in user_list:
+            self.chat_id = chat_id  # Update current chat_id
+            results[chat_id] = self.send_message(text, parse_mode)
+        return results
 
 
 if __name__ == "__main__":
