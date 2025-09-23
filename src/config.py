@@ -25,8 +25,8 @@ user_preferences = {
         'channels': ["@JoseLuisCavatv", '@nacho_ic', '@juanrallo'],
         'wants_news': True
     },
-    # '1021945174': { # Alberto Salcedo
-    #     'channels': ['@JoseLuisCavatv'],
-    #     'wants_news': False
-    # }
+    '1021945174': { # Alberto Salcedo
+        'channels': ['@JoseLuisCavatv', '@nacho_ic'],
+        'wants_news': True
+    }
 }
