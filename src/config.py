@@ -18,7 +18,6 @@ youtube_channels = [
     "@JoseLuisCavatv", 
     "@nacho_ic", 
     "@juanrallo", 
-    "@NegociosTV"
     ]
 
 user_preferences = {
