@@ -6,7 +6,8 @@ from youtube_handler import YouTubeHandler
 from gemini_handler import GeminiHandler
 from telegram_handler import TelegramHandler
 from database import Database
-from config import youtube_api_key, gemini_api_key, bot_token
+from src.financial_news_handler import FinancialNewsHandler
+from config import youtube_api_key, gemini_api_key, bot_token, user_preferences
 import logging
 
 logging.basicConfig(
@@ -23,6 +24,7 @@ yt = YouTubeHandler(youtube_api_key)
 gemini = GeminiHandler(gemini_api_key)
 telegram = TelegramHandler(bot_token, None)
 db = Database()
+news_handler = FinancialNewsHandler()
 
 def reset_daily_status():
     """No longer needed - database tracks daily status automatically"""
@@ -123,12 +125,40 @@ def check_all_channels():
         # Process the channel
         check_and_send_video(channel['channel_handle'])
 
+def send_financial_news():
+    """Send financial news summary to subscribers at 8:00 AM"""
+    logger.info("Sending financial news summary...")
+
+    try:
+        # Get users who want news
+        news_users = [chat_id for chat_id, prefs in user_preferences.items()
+                      if prefs.get('wants_news', False)]
+
+        if not news_users:
+            logger.info("No users subscribed to financial news")
+            return
+
+        # Generate news summary
+        summary = news_handler.create_news_summary()
+
+        if summary:
+            message = f"📰 *Today's Financial News Summary*\n\n{summary}"
+            telegram.send_to_users(message, None, news_users)
+            logger.info(f"Financial news sent to {len(news_users)} users")
+        else:
+            logger.warning("Failed to generate financial news summary")
+
+    except Exception as e:
+        logger.error(f"Error sending financial news: {e}")
+
 # Schedule the unified job
 schedule.every(3).minutes.do(check_all_channels)
 schedule.every().day.at("00:00").do(reset_daily_status)
+schedule.every().day.at("08:00").do(send_financial_news)
 
 logger.info("Scheduler iniciado")
 logger.info("Checking all channels with subscribers every 3 minutes")
+logger.info("Financial news scheduled for 08:00 daily")
 
 # Loop principal
 if __name__ == "__main__":
