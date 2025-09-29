@@ -9,4 +9,4 @@ yfinance==0.2.66
 feedparser==6.0.12
 colorlog==6.9.0
 psutil==7.1.0
-dotenv-linter==0.4.3
+aiosqlite==0.20.0

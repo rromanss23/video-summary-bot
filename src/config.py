@@ -18,15 +18,19 @@ youtube_channels = [
     "@JoseLuisCavatv", 
     "@nacho_ic", 
     "@juanrallo", 
+    "@bravosresearchcrypto", 
+    "@bravosresearch"
     ]
 
 user_preferences = {
     '37150610': {  # Victor Roman
-        'channels': ["@JoseLuisCavatv", '@nacho_ic', '@juanrallo'],
+        'channels': ["@JoseLuisCavatv", '@nacho_ic', '@juanrallo', '@bravosresearchcrypto', '@bravosresearch'],
+        'user_name': 'Victor Roman',
         'wants_news': True
     },
     '1021945174': { # Alberto Salcedo
         'channels': ['@JoseLuisCavatv', '@nacho_ic'],
+        'user_name': 'Alberto Salcedo',
         'wants_news': True
     }
 }
