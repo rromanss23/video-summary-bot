@@ -16,8 +16,9 @@ def migrate():
     channels_config = [
         {
             'handle': '@JoseLuisCavatv',
+            'channel_id': 'UCvCCLJkQpRg0NdT3zNcI08A',
             'name': 'José Luis Cava TV',
-            'start_hour': 10,
+            'start_hour': 8,
             'start_minute': 30,
             'end_hour': 14,
             'interval': 3,
@@ -25,6 +26,7 @@ def migrate():
         },
         {
             'handle': '@nacho_ic',
+            'channel_id': 'UCZLtNl1TyvNJ9K8OYKT43Cw',
             'name': 'Nacho IC',
             'start_hour': 12,
             'start_minute': 15,
@@ -35,7 +37,8 @@ def migrate():
         {
             'handle': '@juanrallo',
             'name': 'Juan Rallo',
-            'start_hour': 10,
+            'channel_id': 'UCBLCvUUCiSqBCEc-TqZ9rGw',
+            'start_hour': 8,
             'start_minute': 0,
             'end_hour': 22,
             'interval': 5,
@@ -43,8 +46,9 @@ def migrate():
         },
         {
             'handle': '@bravosresearchcrypto',
+            'channel_id': 'UC9jTdAaVgvRjhU0gl5LWoZg',
             'name': 'Bravos Crypto Research',
-            'start_hour': 10,
+            'start_hour': 8,
             'start_minute': 0,
             'end_hour': 22,
             'interval': 5,
@@ -52,8 +56,9 @@ def migrate():
         },
         {
             'handle': '@bravosresearch',
+            'channel_id': 'UCOHxDwCcOzBaLkeTazanwcw',
             'name': 'Bravos Research',
-            'start_hour': 10,
+            'start_hour': 8,
             'start_minute': 0,
             'end_hour': 22,
             'interval': 5,
@@ -66,6 +71,7 @@ def migrate():
         db.add_channel(
             channel_handle=channel['handle'],
             channel_name=channel['name'],
+            youtube_channel_id=channel['channel_id'],
             language=channel['language'],
             check_start_hour=channel['start_hour'],
             check_start_minute=channel['start_minute'],

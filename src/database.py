@@ -48,6 +48,7 @@ class Database:
                     channel_id INTEGER PRIMARY KEY AUTOINCREMENT,
                     channel_handle TEXT UNIQUE NOT NULL,
                     channel_name TEXT,
+                    youtube_channel_id TEXT,
                     language TEXT DEFAULT 'es',
                     check_start_hour INTEGER DEFAULT 10,
                     check_start_minute INTEGER DEFAULT 0,
@@ -124,19 +125,19 @@ class Database:
 
     # Channel operations
     def add_channel(self, channel_handle: str, channel_name: str = None,
-                   language: str = 'es', check_start_hour: int = 10,
-                   check_start_minute: int = 0, check_end_hour: int = 14,
-                   check_interval_minutes: int = 5):
+                   youtube_channel_id: str = None, language: str = 'es',
+                   check_start_hour: int = 10, check_start_minute: int = 0,
+                   check_end_hour: int = 14, check_interval_minutes: int = 5):
         """Add a new channel"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
                 INSERT OR IGNORE INTO channels
-                (channel_handle, channel_name, language, check_start_hour, check_start_minute,
-                 check_end_hour, check_interval_minutes)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (channel_handle, channel_name, language, check_start_hour, check_start_minute,
-                  check_end_hour, check_interval_minutes))
+                (channel_handle, channel_name, youtube_channel_id, language, check_start_hour,
+                 check_start_minute, check_end_hour, check_interval_minutes)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (channel_handle, channel_name, youtube_channel_id, language, check_start_hour,
+                  check_start_minute, check_end_hour, check_interval_minutes))
             logger.info(f"Channel {channel_handle} added")
 
     def get_channel(self, channel_handle: str) -> Optional[Dict[str, Any]]:
