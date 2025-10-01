@@ -64,11 +64,11 @@ def check_and_send_video(channel_handle, youtube_channel_id, channel_language=['
             summary = gemini.summarize_video(
                 video_data['transcript'],
                 video_data['title'],
-                video_data['channel_title']
+                video_data['channel_title'],
             )
 
             if summary:
-                message = f"📺 {video_data['channel_title']}\n\n{video_data['title']}\n\n{summary}"
+                message = f"📺 {video_data['channel_title']}\n\n{video_data['title']}\n\n{summary}\n\n{video_data['url']}"
                 telegram.send_to_users(message, None, target_users)
 
                 # Log summary to database
