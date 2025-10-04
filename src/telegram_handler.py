@@ -147,7 +147,7 @@ class TelegramHandler:
         """
         try:
             test_message = "🤖 Bot connection test successful!"
-            return self.send_message(test_message)
+            return self.send_message(test_message, parse_mode=None)
             
         except Exception as e:
             self.logger.error(f"Connection test failed: {e}")
@@ -181,6 +181,52 @@ class TelegramHandler:
             self.chat_id = chat_id  # Update current chat_id
             results[chat_id] = self.send_message(text, parse_mode)
         return results
+    
+    # method to listen bot input messages
+    def listen_messages(self, offset: Optional[int] = None):
+        """
+        Listen for incoming messages
+
+        Args:
+            offset: Update identifier. Only updates with update_id > offset will be returned.
+                   Pass the last update_id + 1 to get only new messages.
+
+        Returns:
+            JSON response with updates
+        """
+        url = f"{self.base_url}/getUpdates"
+        params = {}
+        if offset is not None:
+            params['offset'] = offset
+        latest_messages = requests.get(url, params=params).json()
+        return latest_messages
+
+    def get_last_message(self, offset: Optional[int] = None) -> Optional[dict]:
+        """
+        Get the last message received by the bot
+
+        Args:
+            offset: Update identifier. Only updates with update_id > offset will be returned.
+
+        Returns:
+            Dict with 'update_id' and 'message' keys, or None if no messages
+        """
+        try:
+            response = self.listen_messages(offset=offset)
+
+            if response.get('ok') and response.get('result'):
+                updates = response['result']
+                if updates:
+                    last_update = updates[-1]
+                    return {
+                        'update_id': last_update['update_id'],
+                        'message': last_update.get('message', {})
+                    }
+            return None
+
+        except Exception as e:
+            self.logger.error(f"Error getting last message: {e}")
+            return None
 
 
 if __name__ == "__main__":
@@ -211,11 +257,15 @@ if __name__ == "__main__":
     # Test connection
     if telegram.test_connection():
         print("✅ Telegram connection successful!")
+
+        # listen for messages (example)
+        messages = telegram.get_last_message()
+        print("Latest messages:", messages)
         
-        # Get bot info
-        bot_info = telegram.get_bot_info()
-        if bot_info:
-            print(f"Bot name: {bot_info['result']['first_name']}")
-            print(f"Bot username: @{bot_info['result']['username']}")
+        # # Get bot info
+        # bot_info = telegram.get_bot_info()
+        # if bot_info:
+        #     print(f"Bot name: {bot_info['result']['first_name']}")
+        #     print(f"Bot username: @{bot_info['result']['username']}")
     else:
         print("❌ Telegram connection failed")

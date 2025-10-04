@@ -119,6 +119,47 @@ class YouTubeHandler:
             self.logger.error(f"Error converting handle to channel ID: {e}")
             return None
     
+    def get_video_info(self, video_id: str) -> Optional[Dict]:
+        """
+        Get video information by video ID
+
+        Args:
+            video_id: YouTube video ID
+
+        Returns:
+            Dict with video info or None if not found
+        """
+        try:
+            self.logger.info(f"Getting video info for: {video_id}")
+
+            request = self.youtube.videos().list(
+                part='snippet',
+                id=video_id
+            )
+
+            response = request.execute()
+
+            if not response.get('items'):
+                self.logger.warning(f"No video found with ID: {video_id}")
+                return None
+
+            video = response['items'][0]['snippet']
+            video_info = {
+                'id': video_id,
+                'title': video['title'],
+                'description': video['description'],
+                'published_at': video['publishedAt'],
+                'channel_title': video['channelTitle'],
+                'thumbnail_url': video['thumbnails']['medium']['url']
+            }
+
+            self.logger.info(f"Found video: {video_info['title']}")
+            return video_info
+
+        except Exception as e:
+            self.logger.error(f"Error getting video info: {e}")
+            return None
+
     def get_transcript(self, video_id: str) -> Optional[str]:
             """
             Get transcript for a specific video in Spanish
