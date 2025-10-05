@@ -35,7 +35,6 @@ class Database:
                 CREATE TABLE IF NOT EXISTS users (
                     user_id TEXT PRIMARY KEY,
                     username TEXT,
-                    wants_news INTEGER DEFAULT 1,
                     active INTEGER DEFAULT 1,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     updated_at TEXT DEFAULT CURRENT_TIMESTAMP
@@ -93,17 +92,18 @@ class Database:
             logger.info("Database initialized successfully")
 
     # User operations
-    def add_user(self, user_id: str, username: str = None, wants_news: bool = True):
+    def add_user(self, user_id: str, username: str = None, active: bool = True):
         """Add or update a user"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute('''
-                INSERT INTO users (user_id, username, wants_news)
+                INSERT INTO users (user_id, username, active)
                 VALUES (?, ?, ?)
                 ON CONFLICT(user_id) DO UPDATE SET
                     username = excluded.username,
+                    active = excluded.active,
                     updated_at = CURRENT_TIMESTAMP
-            ''', (user_id, username, int(wants_news)))
+            ''', (user_id, username, int(active)))
             logger.info(f"User {user_id} added/updated")
 
     def get_user(self, user_id: str) -> Optional[Dict[str, Any]]:
@@ -114,14 +114,30 @@ class Database:
             row = cursor.fetchone()
             return dict(row) if row else None
 
-    def update_user_preferences(self, user_id: str, wants_news: bool = None):
-        """Update user preferences"""
+    def get_all_users(self, active_only: bool = True) -> List[Dict[str, Any]]:
+        """Get all users"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            if wants_news is not None:
-                cursor.execute('UPDATE users SET wants_news = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
-                             (int(wants_news), user_id))
-            logger.info(f"User {user_id} preferences updated")
+            if active_only:
+                cursor.execute('SELECT * FROM users WHERE active = 1')
+            else:
+                cursor.execute('SELECT * FROM users')
+            return [dict(row) for row in cursor.fetchall()]
+
+    def is_user_authorized(self, user_id: str) -> bool:
+        """Check if user is authorized (exists and is active)"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('SELECT COUNT(*) as count FROM users WHERE user_id = ? AND active = 1', (user_id,))
+            result = cursor.fetchone()
+            return result['count'] > 0
+
+    def deactivate_user(self, user_id: str):
+        """Deactivate a user (soft delete)"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('UPDATE users SET active = 0, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', (user_id,))
+            logger.info(f"User {user_id} deactivated")
 
     # Channel operations
     def add_channel(self, channel_handle: str, channel_name: str = None,

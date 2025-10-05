@@ -1,7 +1,7 @@
 """Listen bot - Processes YouTube URLs sent by users via Telegram"""
 
 from video_summary_bot.handlers import YouTubeHandler, GeminiHandler, TelegramHandler
-from video_summary_bot.config import youtube_api_key, gemini_api_key, bot_token, user_preferences
+from video_summary_bot.config import youtube_api_key, gemini_api_key, bot_token
 from video_summary_bot.database import Database
 from video_summary_bot.utils import extract_video_id
 import logging
@@ -100,20 +100,21 @@ def process_video_url(video_id: str, user_chat_id: str, yt: YouTubeHandler,
 
 
 def main():
-    """Main bot loop - listens for messages from all configured users"""
+    """Main bot loop - listens for messages from all authorized users in database"""
     yt = YouTubeHandler(youtube_api_key)
     gemini = GeminiHandler(gemini_api_key)
     telegram = TelegramHandler(bot_token, None)  # Don't set default chat_id
     db = Database()
 
-    # Get all user chat IDs from config
-    allowed_users = set(user_preferences.keys())
+    # Get all active users from database
+    active_users = db.get_all_users(active_only=True)
+    allowed_user_ids = {user['user_id'] for user in active_users}
 
     # Track the last processed update_id to avoid duplicates
     last_update_id = None
 
-    print(f"🤖 Bot started. Listening for YouTube URLs from {len(allowed_users)} users...")
-    print(f"📋 Allowed users: {', '.join([prefs['user_name'] for prefs in user_preferences.values()])}")
+    print(f"🤖 Bot started. Listening for YouTube URLs from {len(allowed_user_ids)} authorized users...")
+    print(f"📋 Authorized users: {', '.join([user['username'] for user in active_users])}")
 
     try:
         while True:
@@ -135,8 +136,8 @@ def main():
                 user_chat_id = str(message['message']['chat']['id'])
                 user_name = message['message']['chat'].get('first_name', 'Unknown')
 
-                # Check if user is allowed
-                if user_chat_id not in allowed_users:
+                # Check if user is authorized (check database)
+                if not db.is_user_authorized(user_chat_id):
                     logger.warning(f"Unauthorized user {user_name} ({user_chat_id}) tried to use bot")
                     telegram.send_to_users(
                         "❌ You are not authorized to use this bot.",
@@ -145,7 +146,9 @@ def main():
                     )
                     continue
 
-                logger.info(f"New message from {user_preferences[user_chat_id]['user_name']}: {message_text}")
+                # Get user info from database
+                user = db.get_user(user_chat_id)
+                logger.info(f"New message from {user['username']}: {message_text}")
 
                 # Inform user we received their message
                 telegram.send_to_users(

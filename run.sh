@@ -15,8 +15,9 @@ if [ $# -eq 0 ]; then
     echo "Usage: ./run.sh <command>"
     echo ""
     echo "Available commands:"
-    echo "  listen          - Listen for YouTube URLs from Telegram"
-    echo "  schedule        - Run the scheduler (automated mode)"
+    echo "  combined        - Run both scheduler and listen bot together (recommended)"
+    echo "  listen          - Listen for YouTube URLs from Telegram only"
+    echo "  schedule        - Run the scheduler (automated mode) only"
     echo "  video-summary   - Process today's videos once"
     exit 1
 fi

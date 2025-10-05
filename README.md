@@ -20,6 +20,7 @@ video-summary-bot/
 ├── src/
 │   └── video_summary_bot/
 │       ├── bots/                    # Bot implementations
+│       │   ├── combined.py         # Runs both bots in parallel
 │       │   ├── listen.py           # Interactive URL processor
 │       │   └── video_summary.py    # Scheduled channel monitor
 │       ├── handlers/                # External API integrations
@@ -83,11 +84,17 @@ The bot can be run in several modes:
 
 ### Quick Start (Using Helper Script)
 
-The easiest way to run the bot:
+**Recommended: Run both bots together**
 
 ```bash
-./run.sh listen          # Listen for YouTube URLs
-./run.sh schedule        # Run scheduler (automated mode)
+./run.sh combined   # Run scheduler + listen bot simultaneously (recommended!)
+```
+
+Or run individually:
+
+```bash
+./run.sh listen          # Listen for YouTube URLs only
+./run.sh schedule        # Run scheduler (automated mode) only
 ./run.sh video-summary   # Process today's videos once
 ```
 
@@ -96,6 +103,10 @@ The easiest way to run the bot:
 You can also run using `uv run` directly:
 
 ```bash
+# Recommended: Combined mode (both scheduler and listen bot)
+uv run python -m video_summary_bot combined
+
+# Or run individually:
 # 1. Listen Mode (Interactive)
 uv run python -m video_summary_bot listen
 
@@ -108,42 +119,75 @@ uv run python -m video_summary_bot video-summary
 
 ### Mode Descriptions
 
+- **combined** ⭐ - Runs both scheduler and listen bot in parallel threads (RECOMMENDED)
+  - Best for production use
+  - Handles both automated channel monitoring AND user requests
+  - Single process, two threads running simultaneously
+  - Press Ctrl+C to stop both bots
+
 - **listen** - Interactive mode that listens for YouTube URLs from configured users
   - Accepts messages from all users defined in `config/users.py`
   - Automatically checks if video has been processed before
   - If video exists in database, retrieves cached summary (no API calls)
   - If video is new, generates summary and saves to database
   - Each user receives personalized responses
+
 - **schedule** - Runs scheduled checks for new videos automatically
+  - Checks configured channels every 10 minutes
+  - Only processes videos published today
+
 - **video-summary** - Process today's videos from configured channels once
+  - One-time execution, then exits
 
 ## Configuration
 
+### User Management (Database-based) ✨
+
+**Users are now managed in the database, not config files!**
+
+#### First Time Setup
+
+1. Run the migration script to add your initial users:
+   ```bash
+   uv run python scripts/migrate_users_to_db.py
+   ```
+
+2. This reads from [config/users.py](src/video_summary_bot/config/users.py) and populates the database
+
+#### Adding New Users
+
+```bash
+# Open database
+sqlite3 data/video_summary.db
+
+# Add a user (use their Telegram chat ID)
+INSERT INTO users (user_id, username, active) VALUES ('123456789', 'John Doe', 1);
+
+# Subscribe user to channels
+INSERT INTO user_channels (user_id, channel_id) VALUES ('123456789', 1);
+```
+
+Or use Python:
+```python
+from video_summary_bot.database import Database
+db = Database()
+db.add_user(user_id="123456789", username="John Doe")
+db.subscribe_user_to_channel("123456789", channel_id=1)
+```
+
+📖 **Full guide:** See [docs/USER_MANAGEMENT.md](docs/USER_MANAGEMENT.md) for detailed instructions
+
 ### Channel Configuration
 
-Edit [src/video_summary_bot/config/settings.py](src/video_summary_bot/config/settings.py) to configure monitored channels:
+Channels are also managed in the database. Initial setup:
 
-```python
-youtube_channels = [
-    "@channelhandle1",
-    "@channelhandle2",
-]
+```bash
+sqlite3 data/video_summary.db
+
+# Add a channel
+INSERT INTO channels (channel_handle, channel_name, youtube_channel_id, language)
+VALUES ('@channelhandle', 'Channel Name', 'UCxxxxx', 'es');
 ```
-
-### User Preferences
-
-Edit [src/video_summary_bot/config/users.py](src/video_summary_bot/config/users.py) to configure user subscriptions:
-
-```python
-user_preferences = {
-    'CHAT_ID': {
-        'channels': ['@channel1', '@channel2'],
-        'user_name': 'User Name'
-    }
-}
-```
-
-**Note**: In production, user preferences should be moved to the database.
 
 ## Database
 
