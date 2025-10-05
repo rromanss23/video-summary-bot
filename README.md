@@ -8,7 +8,6 @@ Automated YouTube video summarizer bot for Telegram that monitors YouTube channe
 - 🤖 AI-powered video summarization using Google Gemini
 - 📱 Telegram bot integration for message delivery
 - 👂 Interactive mode for on-demand URL processing
-- 📰 Daily financial news aggregation
 - 📊 Database tracking of processed videos
 - ⏰ Scheduled checks with configurable time windows
 
@@ -20,8 +19,7 @@ video-summary-bot/
 │   └── video_summary_bot/
 │       ├── bots/                    # Bot implementations
 │       │   ├── listen.py           # Interactive URL processor
-│       │   ├── video_summary.py    # Scheduled channel monitor
-│       │   └── financial_news.py   # News aggregator
+│       │   └── video_summary.py    # Scheduled channel monitor
 │       ├── handlers/                # External API integrations
 │       │   ├── youtube.py          # YouTube API handler
 │       │   ├── youtube_rss.py      # RSS feed handler
@@ -35,8 +33,6 @@ video-summary-bot/
 │       ├── utils/                   # Utilities
 │       │   ├── url_parser.py       # URL extraction
 │       │   └── logger.py           # Logging setup
-│       ├── core/                    # Business logic
-│       │   └── financial_news_handler.py
 │       └── scheduler.py             # Job scheduler
 ├── data/                            # Data files
 │   └── video_summary.db            # SQLite database
@@ -91,7 +87,6 @@ The easiest way to run the bot:
 ./run.sh listen          # Listen for YouTube URLs
 ./run.sh schedule        # Run scheduler (automated mode)
 ./run.sh video-summary   # Process today's videos once
-./run.sh financial-news  # Send financial news once
 ```
 
 ### Alternative: Direct Execution
@@ -107,17 +102,13 @@ uv run python -m video_summary_bot schedule
 
 # 3. One-time Video Summary
 uv run python -m video_summary_bot video-summary
-
-# 4. One-time Financial News
-uv run python -m video_summary_bot financial-news
 ```
 
 ### Mode Descriptions
 
 - **listen** - Listens for YouTube URLs sent via Telegram and processes them on demand
-- **schedule** - Runs scheduled checks for new videos and sends financial news automatically
+- **schedule** - Runs scheduled checks for new videos automatically
 - **video-summary** - Process today's videos from configured channels once
-- **financial-news** - Send financial news summary once
 
 ## Configuration
 
@@ -140,8 +131,7 @@ Edit [src/video_summary_bot/config/users.py](src/video_summary_bot/config/users.
 user_preferences = {
     'CHAT_ID': {
         'channels': ['@channel1', '@channel2'],
-        'user_name': 'User Name',
-        'wants_news': True
+        'user_name': 'User Name'
     }
 }
 ```

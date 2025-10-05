@@ -9,7 +9,7 @@ def main():
     parser = argparse.ArgumentParser(description='Video Summary Bot')
     parser.add_argument(
         'command',
-        choices=['listen', 'schedule', 'video-summary', 'financial-news'],
+        choices=['listen', 'schedule', 'video-summary'],
         help='Command to run'
     )
 
@@ -24,9 +24,6 @@ def main():
     elif args.command == 'video-summary':
         from video_summary_bot.bots.video_summary import main as video_summary_main
         video_summary_main()
-    elif args.command == 'financial-news':
-        from video_summary_bot.bots.financial_news import main as financial_news_main
-        financial_news_main()
 
 
 if __name__ == '__main__':

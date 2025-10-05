@@ -1,4 +1,4 @@
-"""Scheduler for automated video processing and news delivery"""
+"""Scheduler for automated video processing"""
 
 import schedule
 import time
@@ -8,8 +8,7 @@ import logging
 
 from video_summary_bot.handlers import YouTubeRSSHandler, GeminiHandler, TelegramHandler
 from video_summary_bot.database import Database
-from video_summary_bot.core import FinancialNewsHandler
-from video_summary_bot.config import gemini_api_key, bot_token, user_preferences
+from video_summary_bot.config import gemini_api_key, bot_token
 
 logging.basicConfig(
     level=logging.INFO,
@@ -25,7 +24,6 @@ yt_rss = YouTubeRSSHandler()  # No API key needed - uses RSS feeds!
 gemini = GeminiHandler(gemini_api_key)
 telegram = TelegramHandler(bot_token, None)
 db = Database()
-news_handler = FinancialNewsHandler()
 
 
 def reset_daily_status():
@@ -139,41 +137,12 @@ def check_all_channels():
         )
 
 
-def send_financial_news():
-    """Send financial news summary to subscribers at 8:00 AM"""
-    logger.info("Sending financial news summary...")
-
-    try:
-        # Get users who want news
-        news_users = [chat_id for chat_id, prefs in user_preferences.items()
-                      if prefs.get('wants_news', False)]
-
-        if not news_users:
-            logger.info("No users subscribed to financial news")
-            return
-
-        # Generate news summary
-        summary = news_handler.create_news_summary()
-
-        if summary:
-            message = f"📰 *Today's Financial News Summary*\n\n{summary}"
-            telegram.send_to_users(message, None, news_users)
-            logger.info(f"Financial news sent to {len(news_users)} users")
-        else:
-            logger.warning("Failed to generate financial news summary")
-
-    except Exception as e:
-        logger.error(f"Error sending financial news: {e}")
-
-
 # Schedule jobs
 schedule.every(10).minutes.do(check_all_channels)
 schedule.every().day.at("00:00").do(reset_daily_status)
-schedule.every().day.at("09:00").do(send_financial_news)
 
 logger.info("Scheduler started")
 logger.info("Checking all channels with subscribers every 10 minutes")
-logger.info("Financial news scheduled for 09:00 daily")
 
 
 def main():

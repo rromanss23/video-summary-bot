@@ -18,7 +18,6 @@ if [ $# -eq 0 ]; then
     echo "  listen          - Listen for YouTube URLs from Telegram"
     echo "  schedule        - Run the scheduler (automated mode)"
     echo "  video-summary   - Process today's videos once"
-    echo "  financial-news  - Send financial news once"
     exit 1
 fi
 
