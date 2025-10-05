@@ -27,3 +27,9 @@ dependencies = [
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[project.scripts]
+video-summary-bot = "video_summary_bot.__main__:main"
+
+[tool.hatchling.build.targets.wheel]
+packages = ["src/video_summary_bot"]

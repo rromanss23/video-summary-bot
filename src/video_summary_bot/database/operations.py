@@ -7,7 +7,7 @@ from contextlib import contextmanager
 logger = logging.getLogger(__name__)
 
 class Database:
-    def __init__(self, db_path: str = "video_summary.db"):
+    def __init__(self, db_path: str = "data/video_summary.db"):
         self.db_path = db_path
         self.init_database()
 

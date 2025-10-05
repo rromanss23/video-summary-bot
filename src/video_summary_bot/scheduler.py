@@ -1,14 +1,15 @@
+"""Scheduler for automated video processing and news delivery"""
+
 import schedule
 import time
 from datetime import datetime
 import pytz
-from youtube_rss_handler import YouTubeRSSHandler
-from gemini_handler import GeminiHandler
-from telegram_handler import TelegramHandler
-from database import Database
-from financial_news_handler import FinancialNewsHandler
-from config import gemini_api_key, bot_token, user_preferences
 import logging
+
+from video_summary_bot.handlers import YouTubeRSSHandler, GeminiHandler, TelegramHandler
+from video_summary_bot.database import Database
+from video_summary_bot.core import FinancialNewsHandler
+from video_summary_bot.config import gemini_api_key, bot_token, user_preferences
 
 logging.basicConfig(
     level=logging.INFO,
@@ -26,27 +27,29 @@ telegram = TelegramHandler(bot_token, None)
 db = Database()
 news_handler = FinancialNewsHandler()
 
+
 def reset_daily_status():
     """No longer needed - database tracks daily status automatically"""
     logger.info("New day - database will track today's videos")
 
+
 def check_and_send_video(channel_handle, youtube_channel_id, channel_language=['es']):
-    """Busca video del canal y lo envía si existe"""
+    """Search for channel video and send if exists"""
     today = datetime.now().strftime('%Y-%m-%d')
 
-    # # Check if already processed today
+    # Check if already processed today
     if db.has_video_been_processed(channel_handle, today):
-        logger.info(f"{channel_handle} ya procesado hoy")
+        logger.info(f"{channel_handle} already processed today")
         return
 
-    logger.info(f"Buscando video de {channel_handle} (RSS)...")
+    logger.info(f"Searching for video from {channel_handle} (RSS)...")
 
     try:
         # Get subscribers from database
         target_users = db.get_channel_subscribers(channel_handle)
 
         if not target_users:
-            logger.warning(f"No hay usuarios suscritos a {channel_handle}")
+            logger.warning(f"No users subscribed to {channel_handle}")
             return
 
         # Check for youtube_channel_id
@@ -58,7 +61,7 @@ def check_and_send_video(channel_handle, youtube_channel_id, channel_language=['
         video_data = yt_rss.get_video_info_with_transcript(youtube_channel_id, channel_language)
 
         if video_data and 'transcript' in video_data:
-            logger.info(f"Video encontrado: {video_data['title']}")
+            logger.info(f"Video found: {video_data['title']}")
 
             # Generate summary
             summary = gemini.summarize_video(
@@ -82,9 +85,9 @@ def check_and_send_video(channel_handle, youtube_channel_id, channel_language=['
                     success=True
                 )
 
-                logger.info(f"Resumen enviado y guardado para {channel_handle}")
+                logger.info(f"Summary sent and saved for {channel_handle}")
             else:
-                logger.error(f"Error generando resumen para {channel_handle}")
+                logger.error(f"Error generating summary for {channel_handle}")
                 # Log failed attempt
                 db.add_summary(
                     channel_handle=channel_handle,
@@ -96,10 +99,11 @@ def check_and_send_video(channel_handle, youtube_channel_id, channel_language=['
                     success=False
                 )
         else:
-            logger.info(f"No hay video hoy de {channel_handle}")
+            logger.info(f"No video today from {channel_handle}")
 
     except Exception as e:
-        logger.error(f"Error procesando {channel_handle}: {e}")
+        logger.error(f"Error processing {channel_handle}: {e}")
+
 
 def check_all_channels():
     """Check all channels with subscribers at their defined times"""
@@ -129,10 +133,11 @@ def check_all_channels():
 
         # Process the channel
         check_and_send_video(
-            channel['channel_handle'], 
-            channel.get('youtube_channel_id'), 
+            channel['channel_handle'],
+            channel.get('youtube_channel_id'),
             [channel.get('language')]
-            )
+        )
+
 
 def send_financial_news():
     """Send financial news summary to subscribers at 8:00 AM"""
@@ -160,18 +165,24 @@ def send_financial_news():
     except Exception as e:
         logger.error(f"Error sending financial news: {e}")
 
-# Schedule the unified job (reduced from 3 to 15 minutes since RSS is quota-free)
+
+# Schedule jobs
 schedule.every(10).minutes.do(check_all_channels)
 schedule.every().day.at("00:00").do(reset_daily_status)
 schedule.every().day.at("09:00").do(send_financial_news)
 
-logger.info("Scheduler iniciado")
+logger.info("Scheduler started")
 logger.info("Checking all channels with subscribers every 10 minutes")
 logger.info("Financial news scheduled for 09:00 daily")
 
-# Loop principal
-if __name__ == "__main__":
+
+def main():
+    """Main scheduler loop"""
     check_all_channels()
     while True:
         schedule.run_pending()
-        time.sleep(60)  # Revisar cada minuto
+        time.sleep(60)  # Check every minute
+
+
+if __name__ == "__main__":
+    main()

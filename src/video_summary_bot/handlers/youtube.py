@@ -188,15 +188,12 @@ class YouTubeHandler:
                     
                     # Fallback: try list/find method
                     try:
-                        transcript_list = transcript_api.list(video_id)
-                        transcript = transcript_list.find_transcript(['es'])
-                        transcript_data = transcript.fetch()
-                        full_text = ' '.join([snippet.text for snippet in transcript_data])
-                        self.logger.info(f"Fallback method worked: {len(full_text)} characters")
+                        transcript = transcript_api.fetch(video_id, languages=['en'])
+                        full_text = ' '.join([snippet.text for snippet in transcript])
+                        self.logger.info(f"English transcript retrieved: {len(full_text)} characters")
                         return full_text
                     except Exception as e:
-                        self.logger.warning(f"Fallback also failed: {e}")
-                    
+                        self.logger.warning(f"Direct fetch failed: {e}")
                     
                     self.logger.info(f"Spanish transcript retrieved, length: {len(full_text)} characters")
                     return full_text
