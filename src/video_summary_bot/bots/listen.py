@@ -2,18 +2,23 @@
 
 from video_summary_bot.handlers import YouTubeHandler, GeminiHandler, TelegramHandler
 from video_summary_bot.config import youtube_api_key, gemini_api_key, bot_token
-from video_summary_bot.database import Database
+from video_summary_bot.database.factory import get_database
 from video_summary_bot.utils import extract_video_id
 import logging
 import time
+import os
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# Session state management for pending authentication
+# Format: {chat_id: {'state': 'waiting_for_password', 'username': 'John'}}
+pending_auth_sessions = {}
+
 
 def process_video_url(video_id: str, user_chat_id: str, yt: YouTubeHandler,
-                      gemini: GeminiHandler, telegram: TelegramHandler, db: Database):
+                      gemini: GeminiHandler, telegram: TelegramHandler, db):
     """Process a video URL - either from cache or generate new summary"""
 
     # Check if video has been processed before
@@ -104,7 +109,7 @@ def main():
     yt = YouTubeHandler(youtube_api_key)
     gemini = GeminiHandler(gemini_api_key)
     telegram = TelegramHandler(bot_token, None)  # Don't set default chat_id
-    db = Database()
+    db = get_database()
 
     # Get all active users from database
     active_users = db.get_all_users(active_only=True)
@@ -135,12 +140,76 @@ def main():
                 message_text = message['message'].get('text', '')
                 user_chat_id = str(message['message']['chat']['id'])
                 user_name = message['message']['chat'].get('first_name', 'Unknown')
+                username = message['message']['chat'].get('username', user_name)
+
+                # Check if user is in pending authentication flow
+                if user_chat_id in pending_auth_sessions:
+                    bot_password = os.getenv('BOT_PASSWORD')
+
+                    if not bot_password:
+                        logger.error("BOT_PASSWORD not set in environment variables")
+                        telegram.send_to_users(
+                            "❌ Authentication system not configured. Please contact admin.",
+                            None,
+                            [user_chat_id]
+                        )
+                        del pending_auth_sessions[user_chat_id]
+                        continue
+
+                    # User is expected to send password
+                    if message_text.strip() == bot_password:
+                        # Password correct - register user
+                        logger.info(f"Correct password from {username} ({user_chat_id})")
+
+                        try:
+                            db.add_user(user_id=user_chat_id, username=username, active=True)
+                            logger.info(f"✅ Registered new user: {username} ({user_chat_id})")
+
+                            telegram.send_to_users(
+                                f"✅ Welcome {username}! You are now registered.\n\n"
+                                "Send me a YouTube URL to get a summary.",
+                                None,
+                                [user_chat_id]
+                            )
+
+                            # Remove from pending sessions
+                            del pending_auth_sessions[user_chat_id]
+                            continue
+
+                        except Exception as e:
+                            logger.error(f"Failed to register user {username}: {e}")
+                            telegram.send_to_users(
+                                "❌ Registration failed. Please try again later or contact admin.",
+                                None,
+                                [user_chat_id]
+                            )
+                            del pending_auth_sessions[user_chat_id]
+                            continue
+                    else:
+                        # Password incorrect
+                        logger.warning(f"Incorrect password from {username} ({user_chat_id})")
+                        telegram.send_to_users(
+                            "❌ Incorrect password. Please try again or contact admin.",
+                            None,
+                            [user_chat_id]
+                        )
+                        del pending_auth_sessions[user_chat_id]
+                        continue
 
                 # Check if user is authorized (check database)
                 if not db.is_user_authorized(user_chat_id):
-                    logger.warning(f"Unauthorized user {user_name} ({user_chat_id}) tried to use bot")
+                    logger.warning(f"Unauthorized user {username} ({user_chat_id}) tried to use bot")
+
+                    # Add user to pending authentication sessions
+                    pending_auth_sessions[user_chat_id] = {
+                        'state': 'waiting_for_password',
+                        'username': username
+                    }
+
                     telegram.send_to_users(
-                        f"❌ You are not authorized to use this bot, yet. Share your chat id with bot admin, all mighty faulty romans. Chat id: {user_chat_id}",
+                        f"👋 Hi {username}!\n\n"
+                        "You are not yet registered to use this bot.\n\n"
+                        "🔐 Please send the password to register and start using the bot.",
                         None,
                         [user_chat_id]
                     )
