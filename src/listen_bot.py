@@ -62,10 +62,13 @@ try:
         message = telegram.get_last_message(offset=offset)
 
         if message:
-
+            # if message was recieved after bot started process it, otherwise ignore
+            if last_update_id is not None and message['update_id'] <= last_update_id:
+                time.sleep(5)
+                continue
             # Inform user we received their message
-            telegram.send_to_users("🔍 Processing your YouTube link...", None, [message['message']['chat']['id']])
-            
+            telegram.send_to_users("🔍 Message received. Processing...", None, [message['message']['chat']['id']])
+
             # Update the last_update_id to avoid reprocessing
             last_update_id = message['update_id']
 
@@ -82,6 +85,8 @@ try:
                     continue
 
                 print(f"Processing video ID: {video_id}")
+                telegram.send_to_users("🔍 Processing your YouTube link...", None, [message['message']['chat']['id']])
+
                 video_info = yt.get_video_info(video_id)
 
                 if video_info:
