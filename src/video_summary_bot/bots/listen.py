@@ -1,25 +1,119 @@
 """Listen bot - Processes YouTube URLs sent by users via Telegram"""
 
 from video_summary_bot.handlers import YouTubeHandler, GeminiHandler, TelegramHandler
-from video_summary_bot.config import youtube_api_key, gemini_api_key, bot_token, chat_id
+from video_summary_bot.config import youtube_api_key, gemini_api_key, bot_token, user_preferences
+from video_summary_bot.database import Database
 from video_summary_bot.utils import extract_video_id
 import logging
 import time
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 
+def process_video_url(video_id: str, user_chat_id: str, yt: YouTubeHandler,
+                      gemini: GeminiHandler, telegram: TelegramHandler, db: Database):
+    """Process a video URL - either from cache or generate new summary"""
+
+    # Check if video has been processed before
+    if db.has_video_id_been_processed(video_id):
+        logger.info(f"Video {video_id} already processed - retrieving from database")
+        telegram.send_to_users(
+            "📂 Found existing summary, retrieving...",
+            None,
+            [user_chat_id]
+        )
+
+        existing_summary = db.get_summary_by_video_id(video_id)
+        if existing_summary:
+            response_message = f"📺 {existing_summary['video_title']}\n\n{existing_summary['summary_text']}\n\n{existing_summary['video_url']}"
+            telegram.send_to_users(response_message, None, [user_chat_id])
+            logger.info("✅ Existing summary sent to Telegram!")
+            return True
+
+    # Video not processed before - generate new summary
+    logger.info(f"Processing new video ID: {video_id}")
+    telegram.send_to_users(
+        "🔍 Processing your YouTube link...",
+        None,
+        [user_chat_id]
+    )
+
+    video_info = yt.get_video_info(video_id)
+
+    if not video_info:
+        telegram.send_to_users(
+            "❌ Could not retrieve video information",
+            None,
+            [user_chat_id]
+        )
+        logger.error("❌ Could not retrieve video information")
+        return False
+
+    transcript = yt.get_transcript(video_id)
+    if not transcript:
+        telegram.send_to_users(
+            "❌ No transcript available for this video",
+            None,
+            [user_chat_id]
+        )
+        logger.error("❌ No transcript available for this video")
+        return False
+
+    summary = gemini.summarize_video(
+        transcript,
+        video_info['title'],
+        video_info['channel_title']
+    )
+
+    if not summary:
+        telegram.send_to_users(
+            "❌ Failed to generate summary",
+            None,
+            [user_chat_id]
+        )
+        logger.error("❌ Failed to generate summary")
+        return False
+
+    # Build video URL
+    video_url = f"https://www.youtube.com/watch?v={video_id}"
+
+    # Save to database
+    today = datetime.now().strftime('%Y-%m-%d')
+    db.add_summary(
+        channel_handle=video_info.get('channel_title', 'manual'),
+        video_id=video_id,
+        video_title=video_info['title'],
+        video_url=video_url,
+        summary_text=summary,
+        video_date=today,
+        success=True
+    )
+    logger.info(f"Summary saved to database for video {video_id}")
+
+    # Send summary to user
+    response_message = f"📺 {video_info['title']}\n\n{summary}\n\n{video_url}"
+    telegram.send_to_users(response_message, None, [user_chat_id])
+    logger.info("✅ Summary sent to Telegram!")
+    return True
+
+
 def main():
-    """Main bot loop"""
+    """Main bot loop - listens for messages from all configured users"""
     yt = YouTubeHandler(youtube_api_key)
     gemini = GeminiHandler(gemini_api_key)
-    telegram = TelegramHandler(bot_token, chat_id)
+    telegram = TelegramHandler(bot_token, None)  # Don't set default chat_id
+    db = Database()
+
+    # Get all user chat IDs from config
+    allowed_users = set(user_preferences.keys())
 
     # Track the last processed update_id to avoid duplicates
     last_update_id = None
 
-    print("🤖 Bot started. Listening for YouTube URLs...")
+    print(f"🤖 Bot started. Listening for YouTube URLs from {len(allowed_users)} users...")
+    print(f"📋 Allowed users: {', '.join([prefs['user_name'] for prefs in user_preferences.values()])}")
 
     try:
         while True:
@@ -28,25 +122,39 @@ def main():
             message = telegram.get_last_message(offset=offset)
 
             if message:
-                # if message was received after bot started process it, otherwise ignore
+                # If message was received after bot started process it, otherwise ignore
                 if last_update_id is not None and message['update_id'] <= last_update_id:
                     time.sleep(5)
                     continue
+
+                # Update the last_update_id to avoid reprocessing
+                last_update_id = message['update_id']
+
+                # Get message details
+                message_text = message['message'].get('text', '')
+                user_chat_id = str(message['message']['chat']['id'])
+                user_name = message['message']['chat'].get('first_name', 'Unknown')
+
+                # Check if user is allowed
+                if user_chat_id not in allowed_users:
+                    logger.warning(f"Unauthorized user {user_name} ({user_chat_id}) tried to use bot")
+                    telegram.send_to_users(
+                        "❌ You are not authorized to use this bot.",
+                        None,
+                        [user_chat_id]
+                    )
+                    continue
+
+                logger.info(f"New message from {user_preferences[user_chat_id]['user_name']}: {message_text}")
 
                 # Inform user we received their message
                 telegram.send_to_users(
                     "🔍 Message received. Processing...",
                     None,
-                    [message['message']['chat']['id']]
+                    [user_chat_id]
                 )
 
-                # Update the last_update_id to avoid reprocessing
-                last_update_id = message['update_id']
-
-                message_text = message['message'].get('text', '')
-                print(f"New message received: {message_text}")
-
-                # check if message contains a youtube video url
+                # Check if message contains a YouTube video URL
                 if "youtube.com" in message_text or "youtu.be" in message_text:
                     video_id = extract_video_id(message_text)
 
@@ -54,52 +162,19 @@ def main():
                         telegram.send_to_users(
                             "❌ Could not extract video ID from URL",
                             None,
-                            [message['message']['chat']['id']]
+                            [user_chat_id]
                         )
-                        print("❌ Could not extract video ID from URL")
+                        logger.error("❌ Could not extract video ID from URL")
                         continue
 
-                    print(f"Processing video ID: {video_id}")
+                    # Process the video URL
+                    process_video_url(video_id, user_chat_id, yt, gemini, telegram, db)
+                else:
                     telegram.send_to_users(
-                        "🔍 Processing your YouTube link...",
+                        "ℹ️ Please send me a YouTube video URL to get a summary.",
                         None,
-                        [message['message']['chat']['id']]
+                        [user_chat_id]
                     )
-
-                    video_info = yt.get_video_info(video_id)
-
-                    if video_info:
-                        transcript = yt.get_transcript(video_id)
-                        if transcript:
-                            summary = gemini.summarize_video(
-                                transcript,
-                                video_info['title'],
-                                video_info['channel_title']
-                            )
-                            if summary:
-                                response_message = f"📺 {video_info['title']}\n\n{summary}"
-                                telegram.send_to_users(
-                                    response_message,
-                                    None,
-                                    [message['message']['chat']['id']]
-                                )
-                                print("✅ Summary sent to Telegram!")
-                            else:
-                                print("❌ Failed to generate summary")
-                        else:
-                            telegram.send_to_users(
-                                "❌ No transcript available for this video",
-                                None,
-                                [message['message']['chat']['id']]
-                            )
-                            print("❌ No transcript available for this video")
-                    else:
-                        telegram.send_to_users(
-                            "❌ Could not retrieve video information",
-                            None,
-                            [message['message']['chat']['id']]
-                        )
-                        print("❌ Could not retrieve video information")
 
             time.sleep(10)  # Poll every 10 seconds
 

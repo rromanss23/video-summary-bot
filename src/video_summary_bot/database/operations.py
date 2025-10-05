@@ -262,3 +262,27 @@ class Database:
 
             cursor.execute(query, params)
             return [dict(row) for row in cursor.fetchall()]
+
+    def get_summary_by_video_id(self, video_id: str) -> Optional[Dict[str, Any]]:
+        """Get summary for a specific video ID if it exists"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT * FROM summaries
+                WHERE video_id = ? AND success = 1
+                ORDER BY processed_at DESC
+                LIMIT 1
+            ''', (video_id,))
+            result = cursor.fetchone()
+            return dict(result) if result else None
+
+    def has_video_id_been_processed(self, video_id: str) -> bool:
+        """Check if a specific video ID has been processed"""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT COUNT(*) as count FROM summaries
+                WHERE video_id = ? AND success = 1
+            ''', (video_id,))
+            result = cursor.fetchone()
+            return result['count'] > 0

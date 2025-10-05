@@ -7,8 +7,10 @@ Automated YouTube video summarizer bot for Telegram that monitors YouTube channe
 - 🎥 Automated YouTube video monitoring via RSS (quota-free)
 - 🤖 AI-powered video summarization using Google Gemini
 - 📱 Telegram bot integration for message delivery
-- 👂 Interactive mode for on-demand URL processing
-- 📊 Database tracking of processed videos
+- 👂 Interactive mode for on-demand URL processing from multiple users
+- 📊 Database tracking and caching of processed videos
+- 🔄 Smart caching - reuses existing summaries instead of regenerating
+- 🔒 User authorization - only configured users can interact with the bot
 - ⏰ Scheduled checks with configurable time windows
 
 ## Project Structure
@@ -106,7 +108,12 @@ uv run python -m video_summary_bot video-summary
 
 ### Mode Descriptions
 
-- **listen** - Listens for YouTube URLs sent via Telegram and processes them on demand
+- **listen** - Interactive mode that listens for YouTube URLs from configured users
+  - Accepts messages from all users defined in `config/users.py`
+  - Automatically checks if video has been processed before
+  - If video exists in database, retrieves cached summary (no API calls)
+  - If video is new, generates summary and saves to database
+  - Each user receives personalized responses
 - **schedule** - Runs scheduled checks for new videos automatically
 - **video-summary** - Process today's videos from configured channels once
 
