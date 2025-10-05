@@ -140,7 +140,7 @@ def main():
                 if not db.is_user_authorized(user_chat_id):
                     logger.warning(f"Unauthorized user {user_name} ({user_chat_id}) tried to use bot")
                     telegram.send_to_users(
-                        "❌ You are not authorized to use this bot.",
+                        f"❌ You are not authorized to use this bot, yet. Share your chat id with bot admin, all mighty faulty romans. Chat id: {user_chat_id}",
                         None,
                         [user_chat_id]
                     )
