@@ -87,15 +87,21 @@ The bot can be run in several modes:
 **Recommended: Run both bots together**
 
 ```bash
-./run.sh combined   # Run scheduler + listen bot simultaneously (recommended!)
+# Run scheduler + listen bot simultaneously (recommended!)
+./run.sh combined   
 ```
 
 Or run individually:
 
 ```bash
-./run.sh listen          # Listen for YouTube URLs only
-./run.sh schedule        # Run scheduler (automated mode) only
-./run.sh video-summary   # Process today's videos once
+# Listen for YouTube URLs only
+./run.sh listen          
+
+# Run scheduler (automated mode) only
+./run.sh schedule        
+
+# Process today's videos once
+./run.sh video-summary   
 ```
 
 ### Alternative: Direct Execution
